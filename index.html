@@ -7,6 +7,7 @@
     <script src="https://unpkg.com/react-dom@16.3.0-alpha.1/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
     <script src="https://tylermcginnis.com/goals-todos-api/index.js"></script>
+    <script src="https://unpkg.com/redux-thunk@2.2.0/dist/redux-thunk.min.js"></script>
 </head>
 <body>
     <div id='app'></div>
@@ -63,6 +64,63 @@
             }
         }
 
+        function handleAddTodo (name, cb) {
+            return (dispatch) => {
+                return API.saveTodo(name)
+                .then((todo) => {
+                    dispatch(addTodoAction(todo))
+                    cb()
+                })
+                .catch('Error! Cannot save todo item.')
+            }
+        }
+
+        function handleDeleteTodo (todo) {
+            return (dispatch) => {
+                dispatch(removeTodoAction(todo.id))
+                return API.deleteTodo(todo.id)
+                .catch(() => {
+                    dispatch(addTodoAction(todo))
+                    alert('An error occurred. Can\'t remove todo!')
+                })
+            }
+        }
+
+        function handleToggle (id) {
+            return (dispatch) => {
+                dispatch(toggleTodoAction(id))
+                return API.saveTodoToggle(id)
+                .catch(() => {
+                    dispatch(toggleTodoAction(id))
+                    alert('An error has occurred. Can\'t toggle todo!')
+                })
+            }
+        }
+
+        function handleAddGoal (name, cb) {
+            return (dispatch) => {
+                return API.saveGoal(name)
+                .then((goal) => {
+                    dispatch(addGoalAction(goal))
+                    cb()
+                })
+                .catch(() => alert('There was an error. Try again.'))
+            }
+        }
+
+        function handleDeleteGoal (goal) {
+            return (dispatch) => {
+                dispatch(removeGoalAction(goal.id))
+                return API.deleteGoal(goal.id)
+                .catch(() => {
+                    dispatch(addGoalAction(goal))
+                    alert('An error occurred. Try again.')
+                })
+            }
+        }
+
+        
+
         function todos (state = [], action) {
             switch(action.type) {
             case ADD_TODO:
@@ -118,7 +176,7 @@
             todos,
             goals,
             loading,
-        }), Redux.applyMiddleware(checker))
+        }), Redux.applyMiddleware(ReduxThunk.default, checker))
     </script>
 
     <script type='text/babel'>
@@ -138,31 +196,19 @@
         class Todos extends React.Component {
             addItem = (e) => {
                 e.preventDefault()
-
-                return API.saveTodo(this.input.value)
-                .then((todo) => {
-                    this.props.store.dispatch(addTodoAction(todo))
-                    this.input.value = ''
-                })
-                .catch('Error! Cannot save todo item.')
+                
+                this.props.store.dispatch(handleAddTodo(
+                    this.input.value,
+                    () => this.input.value = ''
+                ))
             }
 
             removeItem = todo => {
-                this.props.store.dispatch(removeTodoAction(todo.id))
-                return API.deleteTodo(todo.id)
-                .catch(() => {
-                    this.props.store.dispatch(addTodoAction(todo))
-                    alert('An error occurred. Can\'t remove todo!')
-                })
+                this.props.store.dispatch(handleDeleteTodo(todo))
             }
 
             toggleItem = id => {
-                this.props.store.dispatch(toggleTodoAction(id))
-                return API.saveTodoToggle(id)
-                .catch(() => {
-                    this.props.store.dispatch(toggleTodoAction(id))
-                    alert('An error has occurred. Can\'t toggle todo!')
-                })
+                this.props.store.dispatch(handleToggle(id))
             }
 
             render () {
@@ -180,22 +226,14 @@
         class Goals extends React.Component {
             addItem = (e) => {
                 e.preventDefault()
-
-                return API.saveGoal(this.input.value)
-                .then((goal) => {
-                    this.props.store.dispatch(addGoalAction(goal))
-                    this.input.value = ''
-                })
-                .catch('Error! Cannot save goal.')
+                this.props.store.dispatch(handleAddGoal(
+                    this.input.value,
+                    () => this.input.value = ''
+                ))
             }
 
-            removeItem = goal => {
-                this.props.store.dispatch(removeGoalAction(goal.id))
-                return API.deleteGoal(goal.id)
-                .catch(() => {
-                    this.props.store.dispatch(addGoalAction(goal))
-                    alert('An error occurred. Can\'t remove goal!')
-                })
+            removeItem = (goal) => {
+                this.props.store.dispatch(handleDeleteGoal(goal))
             }
 
             render () {
